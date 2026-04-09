@@ -10,66 +10,181 @@ class AddScheduleDialog:
         self.on_submit = on_submit
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("添加行程")
-        self.dialog.geometry("350x280")
+        self.dialog.geometry("420x380")
         self.dialog.resizable(False, False)
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
+        # 设置圆角窗口效果（使用透明边框）
+        self.dialog.configure(bg="#f8f9fa")
+
         self.dialog.update_idletasks()
-        x = (self.dialog.winfo_screenwidth() // 2) - (350 // 2)
-        y = (self.dialog.winfo_screenheight() // 2) - (280 // 2)
-        self.dialog.geometry(f"350x280+{x}+{y}")
+        x = (self.dialog.winfo_screenwidth() // 2) - (420 // 2)
+        y = (self.dialog.winfo_screenheight() // 2) - (380 // 2)
+        self.dialog.geometry(f"420x380+{x}+{y}")
 
         self._setup_ui()
 
     def _setup_ui(self):
-        tk.Label(self.dialog, text="任务名称:").pack(pady=(20, 5), anchor="w", padx=20)
-        self.title_entry = tk.Entry(self.dialog, width=40)
-        self.title_entry.pack(padx=20)
+        # 主容器
+        container = tk.Frame(self.dialog, bg="#f8f9fa")
+        container.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
 
-        tk.Label(self.dialog, text="开始时间 (HH:MM):").pack(pady=(10, 5), anchor="w", padx=20)
-        self.start_time_entry = tk.Entry(self.dialog, width=40)
-        self.start_time_entry.pack(padx=20)
+        # 标题
+        tk.Label(
+            container,
+            text="✨ 添加新行程",
+            font=("Microsoft YaHei UI", 14, "bold"),
+            bg="#f8f9fa",
+            fg="#2c3e50"
+        ).pack(pady=(0, 15))
 
-        tk.Label(self.dialog, text="结束时间 (HH:MM):").pack(pady=(10, 5), anchor="w", padx=20)
-        self.end_time_entry = tk.Entry(self.dialog, width=40)
-        self.end_time_entry.pack(padx=20)
+        # 任务名称
+        tk.Label(container, text="任务名称", font=("Microsoft YaHei UI", 9), bg="#f8f9fa", fg="#5a6c7d").pack(anchor="w")
+        self.title_entry = tk.Entry(
+            container,
+            font=("Microsoft YaHei UI", 10),
+            relief=tk.FLAT,
+            bd=0,
+            bg="white",
+            highlightthickness=1,
+            highlightcolor="#6366f1",
+            highlightbackground="#e2e8f0"
+        )
+        self.title_entry.pack(fill=tk.X, pady=(5, 15))
 
-        tk.Label(self.dialog, text="优先级:").pack(pady=(10, 5), anchor="w", padx=20)
-        priority_frame = tk.Frame(self.dialog)
-        priority_frame.pack(padx=20)
+        # 时间选择区域
+        time_container = tk.Frame(container, bg="#f8f9fa")
+        time_container.pack(fill=tk.X, pady=(0, 15))
+
+        # 开始时间
+        start_frame = tk.Frame(time_container, bg="#f8f9fa")
+        start_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+
+        tk.Label(start_frame, text="开始时间", font=("Microsoft YaHei UI", 9), bg="#f8f9fa", fg="#5a6c7d").pack(anchor="w")
+        self.start_hour = self._create_spinbox(start_frame, 0, 23)
+        self.start_minute = self._create_spinbox(start_frame, 0, 59)
+
+        # 结束时间
+        end_frame = tk.Frame(time_container, bg="#f8f9fa")
+        end_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
+
+        tk.Label(end_frame, text="结束时间", font=("Microsoft YaHei UI", 9), bg="#f8f9fa", fg="#5a6c7d").pack(anchor="w")
+        self.end_hour = self._create_spinbox(end_frame, 0, 23)
+        self.end_minute = self._create_spinbox(end_frame, 0, 59)
+
+        # 优先级选择
+        tk.Label(container, text="优先级", font=("Microsoft YaHei UI", 9), bg="#f8f9fa", fg="#5a6c7d").pack(anchor="w")
+        priority_frame = tk.Frame(container, bg="#f8f9fa")
+        priority_frame.pack(fill=tk.X, pady=(5, 15))
 
         self.priority_var = tk.IntVar(value=2)
-        tk.Radiobutton(priority_frame, text="低", variable=self.priority_var, value=1).pack(side=tk.LEFT)
-        tk.Radiobutton(priority_frame, text="中", variable=self.priority_var, value=2).pack(side=tk.LEFT, padx=10)
-        tk.Radiobutton(priority_frame, text="高", variable=self.priority_var, value=3).pack(side=tk.LEFT)
 
-        button_frame = tk.Frame(self.dialog)
-        button_frame.pack(pady=20)
-        tk.Button(button_frame, text="确定", width=10, command=self._on_ok).pack(side=tk.LEFT, padx=10)
-        tk.Button(button_frame, text="取消", width=10, command=self._on_cancel).pack(side=tk.LEFT, padx=10)
+        # 优先级按钮
+        for idx, (text, color) in enumerate([("低", "#10b981"), ("中", "#f59e0b"), ("高", "#ef4444")], 1):
+            btn = tk.Frame(priority_frame, bg=color, cursor="hand2")
+            btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8 if idx < 3 else 0))
+            btn.bind("<Button-1>", lambda _, v=idx: self._select_priority(v))
 
+            tk.Label(
+                btn,
+                text=text,
+                font=("Microsoft YaHei UI", 9, "bold"),
+                bg=color,
+                fg="white",
+                cursor="hand2"
+            ).pack(expand=True)
+
+        self._priority_buttons = priority_frame.winfo_children()[::2]  # 获取按钮Frame
+
+        # 按钮
+        button_frame = tk.Frame(container, bg="#f8f9fa")
+        button_frame.pack(fill=tk.X)
+
+        cancel_btn = tk.Button(
+            button_frame,
+            text="取消",
+            font=("Microsoft YaHei UI", 9),
+            bg="white",
+            fg="#5a6c7d",
+            relief=tk.FLAT,
+            bd=0,
+            cursor="hand2",
+            command=self._on_cancel
+        )
+        cancel_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+
+        confirm_btn = tk.Button(
+            button_frame,
+            text="✓ 添加",
+            font=("Microsoft YaHei UI", 9, "bold"),
+            bg="#6366f1",
+            fg="white",
+            relief=tk.FLAT,
+            bd=0,
+            cursor="hand2",
+            command=self._on_ok
+        )
+        confirm_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
+
+        # 初始化优先级按钮状态
+        self._select_priority(2)
+
+        # 绑定快捷键
         self.dialog.bind("<Return>", lambda _: self._on_ok())
         self.dialog.bind("<Escape>", lambda _: self._on_cancel())
 
+    def _create_spinbox(self, parent, from_, to):
+        """创建时间选择器"""
+        values = [f"{i:02d}" for i in range(from_, to + 1)]
+        spinbox = ttk.Spinbox(parent, values=values, width=5, font=("Microsoft YaHei UI", 10))
+        spinbox.pack(side=tk.LEFT, padx=2)
+        return spinbox
+
+    def _select_priority(self, value):
+        """选择优先级"""
+        self.priority_var.set(value)
+        for i, btn in enumerate(self._priority_buttons):
+            bg = btn.cget("bg")
+            new_bg = bg
+            if i + 1 == value:
+                # 选中状态：保持原色，加深
+                if i == 0:
+                    new_bg = "#059669"
+                elif i == 1:
+                    new_bg = "#d97706"
+                else:
+                    new_bg = "#dc2626"
+            else:
+                # 未选中状态：变浅
+                if i == 0:
+                    new_bg = "#d1fae5"
+                elif i == 1:
+                    new_bg = "#fde68a"
+                else:
+                    new_bg = "#fca5a5"
+            btn.configure(bg=new_bg)
+            # 更新Label颜色
+            for child in btn.winfo_children():
+                child.configure(
+                    bg=new_bg,
+                    fg="white" if i + 1 == value else "#5a6c7d"
+                )
+
     def _on_ok(self):
         title = self.title_entry.get().strip()
-        start_time = self.start_time_entry.get().strip()
-        end_time = self.end_time_entry.get().strip()
+        start_time = f"{self.start_hour.get()}:{self.start_minute.get()}"
+        end_time = f"{self.end_hour.get()}:{self.end_minute.get()}"
         priority = self.priority_var.get()
 
         if not title:
-            messagebox.showwarning("警告", "请输入任务名称")
-            return
-
-        if not start_time or not end_time:
-            messagebox.showwarning("警告", "请输入开始和结束时间")
+            messagebox.showwarning("提示", "请输入任务名称")
             return
 
         try:
             self.on_submit(title, start_time, end_time, priority)
         except ValueError as exc:
-            messagebox.showwarning("警告", str(exc))
+            messagebox.showwarning("提示", str(exc))
             return
         except Exception as exc:
             messagebox.showerror("错误", f"添加行程失败: {exc}")
@@ -97,76 +212,106 @@ class ScheduleApp:
         self.refresh()
 
     def _setup_ui(self):
-        title_frame = tk.Frame(self.root, bg="#2c3e50", height=50)
+        # 标题栏 - 渐变色效果
+        title_frame = tk.Frame(self.root, bg="white", height=70)
         title_frame.pack(fill=tk.X)
 
-        today = datetime.now().strftime("%Y-%m-%d")
-        title_label = tk.Label(
-            title_frame,
-            text=f"📅 今日行程计划        {today}",
-            font=("Microsoft YaHei UI", 14, "bold"),
-            bg="#2c3e50",
-            fg="white",
-        )
-        title_label.pack(pady=10)
+        # 左侧装饰色块
+        decor_frame = tk.Frame(title_frame, bg="#6366f1", width=6)
+        decor_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-        button_frame = tk.Frame(self.root, pady=10, bg="#ecf0f1")
+        title_container = tk.Frame(title_frame, bg="white")
+        title_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20)
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        tk.Label(
+            title_container,
+            text="📅 今日行程计划",
+            font=("Microsoft YaHei UI", 16, "bold"),
+            bg="white",
+            fg="#1e293b"
+        ).pack(anchor="w", pady=(15, 3))
+
+        tk.Label(
+            title_container,
+            text=today,
+            font=("Microsoft YaHei UI", 10),
+            bg="white",
+            fg="#64748b"
+        ).pack(anchor="w")
+
+        # 按钮区域
+        button_frame = tk.Frame(self.root, pady=15, bg="white")
         button_frame.pack(fill=tk.X)
 
         tk.Button(
             button_frame,
             text="+ 添加行程",
-            width=15,
-            bg="#3498db",
+            width=18,
+            bg="#6366f1",
             fg="white",
-            font=("Microsoft YaHei UI", 10),
+            font=("Microsoft YaHei UI", 10, "bold"),
             relief=tk.FLAT,
+            bd=0,
+            cursor="hand2",
             command=self.add_schedule,
-        ).pack(side=tk.LEFT, padx=20)
+        ).pack(side=tk.LEFT, padx=25)
 
         tk.Button(
             button_frame,
             text="🗑 删除选中",
-            width=15,
-            bg="#e74c3c",
-            fg="white",
+            width=18,
+            bg="#f1f5f9",
+            fg="#64748b",
             font=("Microsoft YaHei UI", 10),
             relief=tk.FLAT,
+            bd=0,
+            cursor="hand2",
             command=self.delete_schedule,
-        ).pack(side=tk.RIGHT, padx=20)
+        ).pack(side=tk.RIGHT, padx=25)
 
-        tk.Frame(self.root, height=2, bg="#bdc3c7").pack(fill=tk.X, pady=5)
+        # 分隔线
+        tk.Frame(self.root, height=1, bg="#e2e8f0").pack(fill=tk.X)
 
-        list_container = tk.Frame(self.root)
-        list_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        # 列表区域
+        list_container = tk.Frame(self.root, bg="white")
+        list_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-        self.canvas = tk.Canvas(list_container, highlightthickness=0)
+        self.canvas = tk.Canvas(list_container, highlightthickness=0, bg="white")
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         scrollbar = tk.Scrollbar(list_container, orient="vertical", command=self.canvas.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.canvas.configure(yscrollcommand=scrollbar.set)
 
-        self.list_frame = tk.Frame(self.canvas)
+        self.list_frame = tk.Frame(self.canvas, bg="white")
         self.canvas_window = self.canvas.create_window((0, 0), window=self.list_frame, anchor="nw")
 
         self.list_frame.bind("<Configure>", self._on_frame_configure)
         self.canvas.bind("<Configure>", self._on_canvas_configure)
 
-        tk.Frame(self.root, height=2, bg="#bdc3c7").pack(fill=tk.X, pady=5)
+        # 分隔线
+        tk.Frame(self.root, height=1, bg="#e2e8f0").pack(fill=tk.X)
 
-        progress_frame = tk.Frame(self.root, pady=15, bg="#ecf0f1")
+        # 进度区域
+        progress_frame = tk.Frame(self.root, pady=20, bg="white")
         progress_frame.pack(fill=tk.X)
 
-        self.progress_label = tk.Label(progress_frame, text="进度: 0/0 (0%)", bg="#ecf0f1", font=("Microsoft YaHei UI", 9))
-        self.progress_label.pack()
+        self.progress_label = tk.Label(progress_frame, text="进度: 0/0 (0%)", bg="white", font=("Microsoft YaHei UI", 9), fg="#64748b")
+        self.progress_label.pack(pady=(0, 10))
 
-        self.progress_bar = ttk.Progressbar(progress_frame, mode="determinate", style="Custom.Horizontal.TProgressbar")
-        self.progress_bar.pack(fill=tk.X, padx=50)
+        self.progress_bar = ttk.Progressbar(progress_frame, mode="determinate", style="Modern.Horizontal.TProgressbar")
+        self.progress_bar.pack(fill=tk.X, padx=25)
 
         style = ttk.Style()
         style.theme_use("default")
-        style.configure("Custom.Horizontal.TProgressbar", background="#2ecc71", troughcolor="#ecf0f1")
+        style.configure(
+            "Modern.Horizontal.TProgressbar",
+            background="#6366f1",
+            troughcolor="#f1f5f9",
+            borderwidth=0,
+            thickness=8
+        )
 
     def _on_frame_configure(self, _event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -217,50 +362,81 @@ class ScheduleApp:
             tk.Label(
                 self.list_frame,
                 text="📝 点击「+ 添加行程」开始规划您的一天",
-                font=("Arial", 12),
-                fg="#95a5a6",
-                pady=20,
+                font=("Microsoft YaHei UI", 11),
+                fg="#94a3b8",
+                pady=30,
+                bg="white"
             ).pack(expand=True)
             return
 
         priority_map = {1: "低", 2: "中", 3: "高"}
-        priority_color = {1: "#27ae60", 2: "#f39c12", 3: "#e74c3c"}
+        priority_bg = {1: "#ecfdf5", 2: "#fffbeb", 3: "#fef2f2"}
+        priority_fg = {1: "#059669", 2: "#d97706", 3: "#dc2626"}
 
         for idx, schedule in enumerate(self.visible_schedules):
-            row = tk.Frame(self.list_frame, pady=5)
-            row.pack(fill=tk.X, pady=2)
+            # 行程卡片
+            card = tk.Frame(
+                self.list_frame,
+                bg="#f8fafc",
+                pady=12,
+                padx=15
+            )
+            card.pack(fill=tk.X, pady=6)
 
-            tk.Radiobutton(row, variable=self.selected_var, value=idx, width=2).pack(side=tk.LEFT, padx=2)
+            # 左侧优先级色条
+            tk.Frame(
+                card,
+                bg=priority_fg.get(schedule.priority, "#64748b"),
+                width=4
+            ).pack(side=tk.LEFT, fill=tk.Y)
 
-            var = tk.BooleanVar(value=schedule.completed)
-            tk.Checkbutton(
-                row,
-                variable=var,
-                command=lambda s=schedule: self.toggle_complete(s.id),
-                width=3,
-            ).pack(side=tk.LEFT, padx=5)
+            # 内容区
+            content = tk.Frame(card, bg="#f8fafc")
+            content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=12)
 
+            # 单选按钮
+            tk.Radiobutton(
+                content,
+                variable=self.selected_var,
+                value=idx,
+                bg="#f8fafc",
+                activebackground="#f8fafc"
+            ).pack(side=tk.LEFT, padx=(0, 8))
+
+            # 时间标签
             tk.Label(
-                row,
+                content,
                 text=f"{schedule.start_time} - {schedule.end_time}",
-                font=("Arial", 10),
-                width=18,
-                anchor="w",
-            ).pack(side=tk.LEFT)
+                font=("Microsoft YaHei UI", 10, "bold"),
+                bg="#f8fafc",
+                fg="#334155"
+            ).pack(side=tk.LEFT, padx=(0, 15))
 
+            # 任务名称
             title_text = schedule.title
+            title_fg = "#334155"
             if schedule.completed:
-                title_text = f"~~{title_text}~~"
-
-            tk.Label(row, text=title_text, font=("Arial", 10), anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
+                title_text = f"✓ {title_text}"
+                title_fg = "#94a3b8"
 
             tk.Label(
-                row,
-                text=f"[{priority_map.get(schedule.priority, '中')}]",
-                fg=priority_color.get(schedule.priority, "#f39c12"),
-                font=("Arial", 9, "bold"),
-                width=6,
-            ).pack(side=tk.LEFT, padx=5)
+                content,
+                text=title_text,
+                font=("Microsoft YaHei UI", 10),
+                bg="#f8fafc",
+                fg=title_fg
+            ).pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+            # 优先级标签
+            tk.Label(
+                card,
+                text=priority_map.get(schedule.priority, "中"),
+                font=("Microsoft YaHei UI", 8, "bold"),
+                bg=priority_bg.get(schedule.priority, "#f1f5f9"),
+                fg=priority_fg.get(schedule.priority, "#64748b"),
+                padx=8,
+                pady=2
+            ).pack(side=tk.RIGHT)
 
     def _update_progress(self):
         completed, total, percentage = self.service.progress(self.visible_schedules)
