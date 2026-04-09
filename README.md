@@ -61,6 +61,20 @@ python -m PyInstaller --noconfirm --clean --onefile --noconsole --name DailySche
 
 安装包产物目录：`installer\\output`
 
+## GitHub Actions 自动打包（推荐）
+
+已内置工作流文件：`.github/workflows/windows-build.yml`
+
+触发方式：
+
+1. 推送到 `main` 分支自动触发
+2. 在 GitHub 仓库 `Actions -> Build Windows App -> Run workflow` 手动触发
+
+构建完成后可在对应的 Action 运行页下载两个产物：
+
+- `DailyScheduler-exe`
+- `DailyScheduler-setup`
+
 ## 数据存储位置
 
 - Windows：`%APPDATA%\\DailyScheduler\\scheduler.json`
