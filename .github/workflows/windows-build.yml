@@ -45,6 +45,14 @@ jobs:
           }
           & $iscc "installer\\daily_scheduler.iss"
 
+      - name: Debug installer output
+        shell: powershell
+        run: |
+          Write-Host "=== output ==="
+          if (Test-Path "output") { Get-ChildItem -Recurse "output" }
+          Write-Host "=== installer/output ==="
+          if (Test-Path "installer/output") { Get-ChildItem -Recurse "installer/output" }
+
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
@@ -56,5 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DailyScheduler-setup
-          path: installer/output/DailyScheduler-Setup-*.exe
+          path: |
+            output/DailyScheduler-Setup-*.exe
+            installer/output/DailyScheduler-Setup-*.exe
           if-no-files-found: error
